@@ -3,19 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Chat Project</title>
+    <title>Web Messenger</title>
     <style>
         body { font-family: sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; background: #e5ddd5; }
-        /* Шапка с вводом имени */
-        .header { background: #075e54; color: white; padding: 10px; display: flex; gap: 10px; align-items: center; }
-        .header input { flex: 1; padding: 5px; border-radius: 5px; border: none; }
+        .header { background: #075e54; color: white; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+        .header-row { display: flex; gap: 10px; align-items: center; }
+        .header input { flex: 1; padding: 5px; border-radius: 5px; border: none; font-size: 14px; }
         
         #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 5px; }
-        
-        .msg { background: white; padding: 8px 12px; border-radius: 10px; max-width: 70%; align-self: flex-start; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .msg { background: white; padding: 8px 12px; border-radius: 10px; max-width: 75%; align-self: flex-start; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
         .msg span { display: block; font-size: 0.7em; color: #888; margin-bottom: 3px; }
-        
-        /* Стиль для твоих сообщений */
         .my-msg { background: #dcf8c6; align-self: flex-end; }
         
         .input-area { padding: 10px; background: #f0f0f0; display: flex; }
@@ -26,8 +23,14 @@
 <body>
 
 <div class="header">
-    <span>Твой ник:</span>
-    <input type="text" id="userName" value="Канюх"> <!-- По умолчанию твой ник -->
+    <div class="header-row">
+        <span>Ник:</span>
+        <input type="text" id="userName" value="Канюх">
+    </div>
+    <div class="header-row">
+        <span>Чат:</span>
+        <input type="text" id="chatRoom" value="main" onchange="switchChat()">
+    </div>
 </div>
 
 <div id="messages"></div>
@@ -41,7 +44,6 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 
 <script>
-    // Твои ключи из Firebase
     const firebaseConfig = {
         apiKey: "AIzaSyA8CqQMcIPPUezDmc4QOzdW3AdwW0-EdfE",
         authDomain: "chg1realese.firebaseapp.com",
@@ -54,14 +56,22 @@
     };
 
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database().ref("multi_user_chat");
+    let currentRoom = "main";
+    let dbRef = firebase.database().ref("rooms/" + currentRoom);
+
+    function switchChat() {
+        currentRoom = document.getElementById('chatRoom').value;
+        document.getElementById('messages').innerHTML = ''; // Очищаем экран
+        dbRef.off(); // Отключаемся от старой комнаты
+        dbRef = firebase.database().ref("rooms/" + currentRoom);
+        listenForMessages();
+    }
 
     function sendMessage() {
         const input = document.getElementById('messageInput');
         const nameInput = document.getElementById('userName');
-        
         if (input.value.trim() !== "") {
-            db.push().set({
+            dbRef.push().set({
                 text: input.value,
                 user: nameInput.value,
                 timestamp: Date.now()
@@ -70,28 +80,26 @@
         }
     }
 
-    db.on("child_added", (snapshot) => {
-        const data = snapshot.val();
-        const myCurrentName = document.getElementById('userName').value;
-        const messagesDiv = document.getElementById("messages");
-        
-        const msgDiv = document.createElement("div");
-        msgDiv.classList.add("msg");
-        
-        // Если имя отправителя совпадает с твоим — двигаем вправо
-        if (data.user === myCurrentName) {
-            msgDiv.classList.add("my-msg");
-        }
-        
-        msgDiv.innerHTML = `<span>${data.user}</span>${data.text}`;
-        messagesDiv.appendChild(msgDiv);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    });
+    function listenForMessages() {
+        dbRef.on("child_added", (snapshot) => {
+            const data = snapshot.val();
+            const myName = document.getElementById('userName').value;
+            const messagesDiv = document.getElementById("messages");
+            const msgDiv = document.createElement("div");
+            
+            msgDiv.classList.add("msg");
+            if (data.user === myName) msgDiv.classList.add("my-msg");
+            
+            msgDiv.innerHTML = `<span>${data.user}</span>${data.text}`;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        });
+    }
 
+    listenForMessages();
     document.getElementById('messageInput').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
 </script>
-
 </body>
 </html>
