@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Project</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; display: flex; flex-direction: column; height: 100vh; margin: 0; background: #e5ddd5; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .msg { background: white; padding: 10px 15px; border-radius: 12px; max-width: 75%; align-self: flex-start; box-shadow: 0 1px 1px rgba(0,0,0,0.1); word-wrap: break-word; }
+        .my-msg { background: #dcf8c6; align-self: flex-end; }
+        .input-area { padding: 10px; background: #f0f0f0; display: flex; align-items: center; }
+        input { flex: 1; padding: 12px; border: none; border-radius: 25px; outline: none; font-size: 16px; }
+        button { margin-left: 10px; padding: 10px 20px; border: none; background: #075e54; color: white; border-radius: 20px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div id="messages"></div>
+<div class="input-area">
+    <input type="text" id="messageInput" placeholder="Написать сообщение..." autocomplete="off">
+    <button onclick="sendMessage()">ОТПРАВИТЬ</button>
+</div>
+
+<!-- Библиотеки Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+    // Твой конфиг из скрина image_0be6e1.png
+    const firebaseConfig = {
+        apiKey: "AIzaSyA8CqQMcIPPUezDmc4QOzdW3AdwW0-EdfE",
+        authDomain: "chg1realese.firebaseapp.com",
+        databaseURL: "https://chg1realese-default-rtdb.firebaseio.com",
+        projectId: "chg1realese",
+        storageBucket: "chg1realese.firebasestorage.app",
+        messagingSenderId: "1073070552152",
+        appId: "1:1073070552152:web:ac76a82ca5599af09d462d",
+        measurementId: "G-XCBNPBSJ28"
+    };
+
+    // Инициализация
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref("messages");
+
+    // Функция отправки
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        if (input.value.trim() !== "") {
+            db.push().set({
+                text: input.value,
+                user: "Канюх", // Твой ник
+                timestamp: Date.now()
+            });
+            input.value = "";
+        }
+    }
+
+    // Слушатель Enter
+    document.getElementById('messageInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+
+    // Получение сообщений в реальном времени
+    db.on("child_added", (snapshot) => {
+        const data = snapshot.val();
+        const messagesDiv = document.getElementById("messages");
+        const msgDiv = document.createElement("div");
+        
+        msgDiv.classList.add("msg");
+        if (data.user === "Канюх") {
+            msgDiv.classList.add("my-msg");
+        }
+        
+        msgDiv.innerText = data.text;
+        messagesDiv.appendChild(msgDiv);
+        
+        // Автопрокрутка вниз
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+</script>
+
+</body>
+</html>
